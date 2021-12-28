@@ -1,4 +1,4 @@
-# Deep-Learning
+# Arnav's Deep Learning Space
 This repo is basically a personal space for me to explore Deep Learning practictioning. I've worked heavily on theory in the last year and while that's awesome, I'm trying to hone in on really squeezing the juice out of the frameworks and learning to builds some cool things. As such, there are currently three main components to this repo at the moment. 
 
 1. Convolution (straight out of chapter 6 of d2l, but lots of adjustments for me to learn and play around with these tools)
