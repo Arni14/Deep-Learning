@@ -1,7 +1,5 @@
 import torch
 from torch import nn
-import numpy as np
-from d2l import torch as d2l
 
 
 def corr2d(X, K):
