@@ -5,28 +5,38 @@ from torch.nn import functional as F
 # blocks. Let's start with implementing an inception block.
 
 
-class InceptionBlock(nn.Module):
+class Inception(nn.Module):
+    # `c1`--`c4` are the number of output channels for each path
     def __init__(self, in_channels, c1, c2, c3, c4, **kwargs):
-        super(InceptionBlock, self).__init__(**kwargs)
-        # Path 1: Just a 1x1 Convolution
-        self.conv1 = nn.Conv2d(in_channels, c1, kernel_size=1)
-        # Path 2: A 1x1 Convolution and a 3x3 Convolution
-        self.conv2a = nn.Conv2d(in_channels, c2[0], kernel_size=1)
-        self.conv2b = nn.Conv2d(c2[0], c2[1], kernel_size=3, padding=1)
-        # Path 3: A 1x1 Convolution and a 5x5 Convolution
-        self.conv3a = nn.Conv2d(in_channels, c3[0], kernel_size=1)
-        self.conv3b = nn.Conv2d(c3[0], c3[1], kernel_size=5, padding=2)
-        # Path 4: A 3x3 MaxPool and a 1x1 Convolution
-        self.maxpool4a = nn.MaxPool2d(kernel_size=3, stride=1, padding=1)
-        self.conv4b = nn.Conv2d(in_channels, c4, kernel_size=1)
+        super(Inception, self).__init__(**kwargs)
+        # Path 1 is a single 1 x 1 convolutional layer
+        self.p1_1 = nn.Conv2d(in_channels, c1, kernel_size=1)
+        self.bn1 = nn.BatchNorm2d(c1)
+        # Path 2 is a 1 x 1 convolutional layer followed by a 3 x 3
+        # convolutional layer
+        self.p2_1 = nn.Conv2d(in_channels, c2[0], kernel_size=1)
+        self.bn2_1 = nn.BatchNorm2d(c2[0])
+        self.p2_2 = nn.Conv2d(c2[0], c2[1], kernel_size=3, padding=1)
+        self.bn2_2 = nn.BatchNorm2d(c2[1])
+        # Path 3 is a 1 x 1 convolutional layer followed by a 5 x 5
+        # convolutional layer
+        self.p3_1 = nn.Conv2d(in_channels, c3[0], kernel_size=1)
+        self.bn3_1 = nn.BatchNorm2d(c3[0])
+        self.p3_2 = nn.Conv2d(c3[0], c3[1], kernel_size=5, padding=2)
+        self.bn3_2 = nn.BatchNorm2d(c3[1])
+        # Path 4 is a 3 x 3 maximum pooling layer followed by a 1 x 1
+        # convolutional layer
+        self.p4_1 = nn.MaxPool2d(kernel_size=3, stride=1, padding=1)
+        self.p4_2 = nn.Conv2d(in_channels, c4, kernel_size=1)
+        self.bn4 = nn.BatchNorm2d(c4)
 
     def forward(self, x):
-        out1 = F.relu(self.conv1(x))
-        out2 = F.relu(self.conv2b(F.relu(self.conv2a(x))))
-        out3 = F.relu(self.conv3b(F.relu(self.conv3a(x))))
-        out4 = F.relu(self.maxpool4a(F.relu(self.conv4b(x))))
-        return torch.cat((out1, out2, out3, out4), dim=1)
-
+        p1 = F.relu(self.bn1(self.p1_1(x)))
+        p2 = F.relu(self.bn2_2(self.p2_2(F.relu(self.bn2_1(self.p2_1(x))))))
+        p3 = F.relu(self.bn3_2(self.p3_2(F.relu(self.bn3_1(self.p3_1(x))))))
+        p4 = F.relu(self.bn4(self.p4_2(self.p4_1(x))))
+        # Concatenate the outputs on the channel dimension
+        return torch.cat((p1, p2, p3, p4), dim=1)
 
 # Now let's put a few inception blocks together to build a full GoogLeNet
 b1 = nn.Sequential(
@@ -44,23 +54,23 @@ b2 = nn.Sequential(
 )
 
 b3 = nn.Sequential(
-    InceptionBlock(192, 64, (96, 128), (16, 32), 32),
-    InceptionBlock(256, 128, (128, 192), (32, 96), 64),
+    Inception(192, 64, (96, 128), (16, 32), 32),
+    Inception(256, 128, (128, 192), (32, 96), 64),
     nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 )
 
 b4 = nn.Sequential(
-    InceptionBlock(480, 192, (96, 208), (16, 48), 64),
-    InceptionBlock(512, 160, (112, 224), (24, 64), 64),
-    InceptionBlock(512, 128, (128, 256), (24, 64), 64),
-    InceptionBlock(512, 112, (144, 288), (32, 64), 64),
-    InceptionBlock(528, 256, (160, 320), (32, 128), 128),
+    Inception(480, 192, (96, 208), (16, 48), 64),
+    Inception(512, 160, (112, 224), (24, 64), 64),
+    Inception(512, 128, (128, 256), (24, 64), 64),
+    Inception(512, 112, (144, 288), (32, 64), 64),
+    Inception(528, 256, (160, 320), (32, 128), 128),
     nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
 )
 
 b5 = nn.Sequential(
-    InceptionBlock(832, 256, (160, 320), (32, 128), 128),
-    InceptionBlock(832, 384, (192, 384), (48, 128), 128),
+    Inception(832, 256, (160, 320), (32, 128), 128),
+    Inception(832, 384, (192, 384), (48, 128), 128),
     nn.AdaptiveAvgPool2d((1,1)),
     nn.Flatten()
 )
