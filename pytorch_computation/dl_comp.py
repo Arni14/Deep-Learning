@@ -2,6 +2,7 @@ import torch
 from torch import nn
 from torch import functional as F
 
+
 # Implement a block that takes two blocks as an argument, say net1 and net2 and returns the 
 # concatenated output of both networks in the forward propagation. This is also called a parallel block.
 class ParallelBlock(nn.Module):
@@ -15,6 +16,7 @@ class ParallelBlock(nn.Module):
 		out2 = self.block2(X)
 		return torch.cat((out1, out2), 0)
 
+
 # Assume that you want to concatenate multiple instances of the same network. Implement a factory 
 # function that generates multiple instances of the same block and build a larger network from it.
 class Factory(nn.Module):
@@ -26,9 +28,10 @@ class Factory(nn.Module):
 	def forward(self, X):
 		return self.net(X)
 
+
 class MLP(nn.Module):
-    # Declare a layer with model parameters. Here, we declare two fully
-    # connected layers
+	# Declare a layer with model parameters. Here, we declare two fully
+	# connected layers
     def __init__(self):
         # Call the constructor of the `MLP` parent class `Module` to perform
         # the necessary initialization. In this way, other function arguments
@@ -72,6 +75,7 @@ class TensorReduction(nn.Module):
 	def forward(self, X):
 		tensor_transform = torch.matmul(self.weight, X).t()
 		return torch.matmul(X.t(), tensor_transform)
+
 
 if __name__ == "__main__":
 	tr = TensorReduction(2, 2, 2)
